@@ -64,18 +64,37 @@ export function formatCandidateRow(
   ];
 }
 
+export function sanitizePrivateKey(rawKey: string | undefined): string {
+  if (!rawKey) return '';
+  let key = rawKey.trim();
+
+  // Bersihkan tanda kutip pembungkus ("..." atau '...') jika ikut ter-copy di Vercel
+  if (
+    (key.startsWith('"') && key.endsWith('"')) ||
+    (key.startsWith("'") && key.endsWith("'"))
+  ) {
+    key = key.slice(1, -1).trim();
+  }
+
+  // Ganti literal \n menjadi karakter newline sesungguhnya
+  return key.replace(/\\n/g, '\n');
+}
+
 export async function appendToGoogleSheet(
   messages: ChatMessage[],
   candidateName: string,
   candidateEmail: string
 ): Promise<void> {
-  const serviceAccountEmail = process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL;
-  const privateKey = process.env.GOOGLE_PRIVATE_KEY?.replace(/\\n/g, '\n');
-  const spreadsheetId = process.env.GOOGLE_SHEET_ID;
-  const sheetName = process.env.GOOGLE_SHEET_NAME || 'Result';
+  const serviceAccountEmail = process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL?.trim();
+  const rawKey = process.env.GOOGLE_PRIVATE_KEY;
+  const privateKey = sanitizePrivateKey(rawKey);
+  const spreadsheetId = process.env.GOOGLE_SHEET_ID?.trim();
+  const sheetName = process.env.GOOGLE_SHEET_NAME?.trim() || 'Result';
 
   if (!serviceAccountEmail || !privateKey || !spreadsheetId) {
-    throw new Error('Google Sheets credentials are not configured');
+    throw new Error(
+      `Missing Google Sheets credentials. Email: ${!!serviceAccountEmail}, Key: ${!!privateKey}, SheetId: ${!!spreadsheetId}`
+    );
   }
 
   const auth = new google.auth.GoogleAuth({

@@ -20,10 +20,13 @@ export async function POST(request: Request) {
     await appendToGoogleSheet(messages, candidateName, candidateEmail);
 
     return NextResponse.json({ success: true });
-  } catch (error) {
+  } catch (error: any) {
     console.error('Error submitting to Google Sheets:', error);
     return NextResponse.json(
-      { success: false, error: 'Failed to submit to Google Sheets' },
+      {
+        success: false,
+        error: error?.message || 'Failed to submit to Google Sheets',
+      },
       { status: 500 }
     );
   }
