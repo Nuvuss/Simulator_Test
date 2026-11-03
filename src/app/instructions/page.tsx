@@ -67,11 +67,12 @@ export default function InstructionsPage() {
             </h3>
             <div className="flex items-start gap-2">
               <span className="font-bold text-[#E7000B]">1.</span>
-              <span>Kamu akan berhadapan dengan bot yang berperan sebagai<strong>3 calon siswa (lead)</strong> dengan profil yang berbeda secara berurutan. <strong>Career Switcher daftar untuk Digital Marketing</strong>, <strong>Fresh Graduate daftar untuk data Analytics</strong>, dan <strong>Profesional Upskiller daftar untuk Data-Driven Decision Making ITB x RevoU</strong></span>
+              <span>Kamu akan berhadapan dengan bot yang berperan sebagai<strong> 3 calon siswa (lead)</strong> dengan profil yang berbeda secara berurutan. <strong>Career Switcher daftar untuk Digital Marketing</strong>, <strong>Fresh Graduate daftar untuk data Analytics</strong>, dan <strong>Profesional Upskiller daftar untuk Data-Driven Decision Making ITB x RevoU</strong></span>
             </div>
             <div className="flex items-start gap-2">
               <span className="font-bold text-[#E7000B]">2.</span>
-              <span>Read the three program pages on the RevoU website (<a href="https://revou.co" target="_blank" rel="noopener noreferrer" className="text-blue-600 underline font-medium hover:text-blue-800">revou.co</a>) first. Look at the curriculum, the learning journey, and the alumni stories and portfolios, so you can answer the leads&apos; questions with confidence.</span>
+              <span>  Baca & pahami dahulu ketiga halaman program sesuai yang disebutkan poin 1 di situs web RevoU (<a href="https://revou.co" target="_blank" rel="noopener noreferrer" className="text-blue-600 underline font-medium hover:text-blue-800">revou.co</a>) Perhatikan kurikulum, learning journey,, dan kisah atau portofolio para alumni, sehingga Anda dapat menanggapi leads tersebut dengan percaya diri.
+              </span>
             </div>
             <div className="flex items-start gap-2">
               <span className="font-bold text-[#E7000B]">3.</span>
