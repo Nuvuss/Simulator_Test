@@ -71,7 +71,7 @@ export default function InstructionsPage() {
             </div>
             <div className="flex items-start gap-2">
               <span className="font-bold text-[#E7000B]">2.</span>
-              <span>  Baca & pahami dahulu ketiga halaman program sesuai yang disebutkan poin 1 di situs web RevoU (<a href="https://revou.co" target="_blank" rel="noopener noreferrer" className="text-blue-600 underline font-medium hover:text-blue-800">revou.co</a>) Perhatikan kurikulum, learning journey,, dan kisah atau portofolio para alumni, sehingga Anda dapat menanggapi leads tersebut dengan percaya diri.
+              <span>  Baca & pahami dahulu ketiga halaman program sesuai yang disebutkan poin 1 di situs web RevoU (<a href="https://revou.co" target="_blank" rel="noopener noreferrer" className="text-blue-600 underline font-medium hover:text-blue-800">revou.co</a>). Perhatikan kurikulum, learning journey, dan kisah atau portofolio para alumni, sehingga Anda dapat menanggapi leads tersebut dengan percaya diri.
               </span>
             </div>
             <div className="flex items-start gap-2">
