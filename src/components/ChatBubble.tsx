@@ -16,7 +16,7 @@ export function ChatBubble({ sender, text, timestamp }: ChatBubbleProps) {
   });
 
   return (
-    <div className={`flex ${isBM ? 'justify-end' : 'justify-start'} mb-2 px-3`}>
+    <div className={`flex ${isBM ? 'justify-end' : 'justify-start'} mb-2 px-3 animate-message-in`}>
       <div
         className={`relative max-w-[80%] sm:max-w-[70%] px-3 py-2 rounded-lg shadow-sm ${
           isBM

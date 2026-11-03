@@ -43,16 +43,16 @@ export function ChatHeader({
         </div>
 
         {/* Name and Info */}
-        <div className="min-w-0 flex-1">
+        <div className="min-w-0 flex-1 transition-all duration-300">
           <div className="flex items-center gap-1.5">
-            <h2 className="font-semibold text-sm sm:text-base leading-tight truncate">
+            <h2 className="font-semibold text-sm sm:text-base leading-tight truncate transition-all duration-300">
               {leadName}
             </h2>
             <span className="text-[10px] bg-[#128C7E] text-white px-1.5 py-0.5 rounded font-medium flex-shrink-0">
               RevoU
             </span>
           </div>
-          <p className="text-[11px] text-green-100/90 leading-tight truncate">
+          <p className="text-[11px] text-green-100/90 leading-tight truncate transition-all duration-300">
             online • <span className="text-green-200">{leadProfile}</span>
           </p>
         </div>
@@ -60,7 +60,7 @@ export function ChatHeader({
 
       {/* Right side: Session badge & Timer */}
       <div className="flex items-center gap-2 flex-shrink-0 ml-2">
-        <span className="text-[11px] font-semibold bg-[#128C7E] text-white px-2 py-0.5 rounded-full">
+        <span className="text-[11px] font-semibold bg-[#128C7E] text-white px-2 py-0.5 rounded-full transition-all duration-300">
           {sectionLabel}
         </span>
         <Timer remainingTime={remainingTime} onTimeout={onTimeout} />

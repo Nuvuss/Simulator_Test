@@ -84,3 +84,4 @@ export async function GET() {
     return NextResponse.json(diagnostics, { status: 500 });
   }
 }
+

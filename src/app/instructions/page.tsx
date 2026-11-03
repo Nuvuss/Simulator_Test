@@ -7,6 +7,7 @@ import { useEffect, useState } from 'react';
 export default function InstructionsPage() {
   const router = useRouter();
   const [candidateName, setCandidateName] = useState('');
+  const [isStarting, setIsStarting] = useState(false);
 
   useEffect(() => {
     const state = loadExamState();
@@ -18,6 +19,7 @@ export default function InstructionsPage() {
   }, [router]);
 
   const handleStart = () => {
+    setIsStarting(true);
     router.push('/exam');
   };
 
@@ -65,11 +67,11 @@ export default function InstructionsPage() {
             </h3>
             <div className="flex items-start gap-2">
               <span className="font-bold text-[#E7000B]">1.</span>
-              <span>Terdiri dari <strong>3 calon siswa (lead)</strong> yang berbeda secara berurutan.</span>
+              <span>Kamu akan berhadapan dengan bot yang berperan sebagai<strong>3 calon siswa (lead)</strong> dengan profil yang berbeda secara berurutan. <strong>Career Switcher daftar untuk Digital Marketing</strong>, <strong>Fresh Graduate daftar untuk data Analytics</strong>, dan <strong>Profesional Upskiller daftar untuk Data-Driven Decision Making ITB x RevoU</strong></span>
             </div>
             <div className="flex items-start gap-2">
               <span className="font-bold text-[#E7000B]">2.</span>
-              <span>Batas waktu tiap lead adalah <strong>15 menit</strong>.</span>
+              <span>Read the three program pages on the RevoU website (<a href="https://revou.co" target="_blank" rel="noopener noreferrer" className="text-blue-600 underline font-medium hover:text-blue-800">revou.co</a>) first. Look at the curriculum, the learning journey, and the alumni stories and portfolios, so you can answer the leads&apos; questions with confidence.</span>
             </div>
             <div className="flex items-start gap-2">
               <span className="font-bold text-[#E7000B]">3.</span>
@@ -77,7 +79,19 @@ export default function InstructionsPage() {
             </div>
             <div className="flex items-start gap-2">
               <span className="font-bold text-[#E7000B]">4.</span>
-              <span>Hasil tes akan otomatis dikirimkan setelah seluruh sesi selesai.</span>
+              <span>Batas waktu chat dengan tiap lead adalah <strong>15 menit</strong>.</span>
+            </div>
+            <div className="flex items-start gap-2">
+              <span className="font-bold text-[#E7000B]">5.</span>
+              <div className="space-y-1.5 flex-1">
+                <span>🚨 Kamu hanya bisa memberikan respon dengan <strong>1 bubble chat</strong>. Pastikan informasi, urgency, dan call to action yang ingin kamu sampaikan sudah tercantum langsung dalam 1 bubble chat sebelum kamu kirim.</span>
+                <div className="bg-amber-50/90 border border-amber-200/90 rounded-xl p-3 text-[11px] text-gray-700 leading-relaxed mt-1">
+                  <span className="font-bold text-amber-900 block mb-1">💡 Contoh:</span>
+                  <p className="italic text-gray-800">
+                    &ldquo;Halo kak 😊 Wah udh kerja full-time pasti menyita banyak waktu dan energi ya. Kalo mau cari peluang remote work jg program Digital Marketing RevoU pas bgt. Soalnya dirancang cocok buat pekerja full time. Kelasnya di luar jam kerja (Senin sampai Kamis pukul 19.00 WIB) dan seluruh sesi LIVE juga direkam dengan akses lifetime, jadi aman bgt dijalankan berdampingan. Biar kita bisa ngobrol lebih leluasa mengenai rencana kakak, boleh tahu apakah kakak lebih luang untuk sesi konsultasi gratis di waktu pagi, siang-sore, atau malam hari? ✨&rdquo;
+                  </p>
+                </div>
+              </div>
             </div>
           </div>
         </div>
@@ -85,10 +99,20 @@ export default function InstructionsPage() {
         {/* Action Button */}
         <button
           onClick={handleStart}
-          className="w-full bg-[#E7000B] hover:bg-[#C8000A] active:scale-[0.99] text-white font-bold py-3.5 px-6 rounded-xl transition-all shadow-md text-base flex items-center justify-center gap-2"
+          disabled={isStarting}
+          className="w-full bg-[#E7000B] hover:bg-[#C8000A] active:scale-[0.99] text-white font-bold py-3.5 px-6 rounded-xl transition-all shadow-md text-base flex items-center justify-center gap-2 cursor-pointer disabled:opacity-85"
         >
-          <span>Mulai Simulasi Tes</span>
-          <span className="text-lg">→</span>
+          {isStarting ? (
+            <>
+              <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+              <span>Menyiapkan Ujian...</span>
+            </>
+          ) : (
+            <>
+              <span>Mulai Simulasi Tes</span>
+              <span className="text-lg">→</span>
+            </>
+          )}
         </button>
       </div>
     </div>

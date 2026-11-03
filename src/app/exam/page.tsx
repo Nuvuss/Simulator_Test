@@ -6,7 +6,6 @@ import { ChatHeader } from '@/components/ChatHeader';
 import { ChatBubble } from '@/components/ChatBubble';
 import { ChatInput } from '@/components/ChatInput';
 import { TypingIndicator } from '@/components/TypingIndicator';
-import { SectionTransition } from '@/components/SectionTransition';
 import { leads } from '@/data/leads';
 import {
   initSection,
@@ -23,8 +22,13 @@ export default function ExamPage() {
   const router = useRouter();
   const [examState, setExamState] = useState<ExamState | null>(null);
   const [isTyping, setIsTyping] = useState(false);
-  const [showTransition, setShowTransition] = useState(false);
   const [showWelcomeModal, setShowWelcomeModal] = useState(false);
+  const [isModalClosing, setIsModalClosing] = useState(false);
+  const [screenTransition, setScreenTransition] = useState<'slide-out' | 'slide-in' | null>(null);
+  const [transitionOverlay, setTransitionOverlay] = useState<{
+    text: string;
+    subtext?: string;
+  } | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [displayMessages, setDisplayMessages] = useState<ChatMessage[]>([]);
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -38,18 +42,20 @@ export default function ExamPage() {
     );
 
     if (currentMessages.length >= 2) {
-      // Show first message immediately
-      setDisplayMessages([currentMessages[0]]);
+      // Show first message smoothly after slight pause for clean entrance
+      setTimeout(() => {
+        setDisplayMessages([currentMessages[0]]);
+      }, 150);
 
       // Show typing indicator then second message
       setTimeout(() => {
         setIsTyping(true);
-      }, 500);
+      }, 750);
 
       setTimeout(() => {
         setIsTyping(false);
         setDisplayMessages([currentMessages[0], currentMessages[1]]);
-      }, 2000);
+      }, 2250);
     }
   }, []);
 
@@ -96,8 +102,8 @@ export default function ExamPage() {
       !examState ||
       examState.phase === 'done' ||
       examState.phase === 'booking-confirm' ||
-      showTransition ||
       showWelcomeModal ||
+      Boolean(transitionOverlay) ||
       !examState.sectionStartTime
     )
       return;
@@ -109,7 +115,7 @@ export default function ExamPage() {
     }, 1000);
 
     return () => clearInterval(interval);
-  }, [examState, showTransition, showWelcomeModal]);
+  }, [examState, showWelcomeModal, transitionOverlay]);
 
   const handleTimerExpired = useCallback(() => {
     if (!examState) return;
@@ -122,16 +128,41 @@ export default function ExamPage() {
 
     // Move to next lead or complete
     setTimeout(() => {
-      const nextState = moveToNextLead(newState);
-      setExamState(nextState);
-      saveExamState(nextState);
-
-      if (nextState.status === 'completed') {
+      const nextIndex = newState.currentLeadIndex + 1;
+      if (nextIndex >= leads.length) {
+        const nextState = moveToNextLead(newState);
+        setExamState(nextState);
+        saveExamState(nextState);
         submitAndRedirect(nextState);
       } else {
-        setShowTransition(true);
+        const nextLead = leads[nextIndex];
+
+        // 1. Slide out current chat screen to the left
+        setScreenTransition('slide-out');
+
+        setTimeout(() => {
+          setTransitionOverlay({
+            text: `Waktu Sesi ${newState.currentLeadIndex + 1} Berakhir`,
+            subtext: `Menyiapkan Sesi ${nextIndex + 1} (${nextLead.name})...`,
+          });
+        }, 100);
+
+        setTimeout(() => {
+          const nextState = moveToNextLead(newState);
+          setExamState(nextState);
+          saveExamState(nextState);
+          setDisplayMessages([]);
+          setIsTyping(false);
+          setTransitionOverlay(null);
+          setScreenTransition('slide-in');
+          setShowWelcomeModal(true);
+
+          setTimeout(() => {
+            setScreenTransition(null);
+          }, 400);
+        }, 1200);
       }
-    }, 2000);
+    }, 1800);
   }, [examState]);
 
   const handleSend = useCallback(
@@ -177,21 +208,46 @@ export default function ExamPage() {
 
           if (sectionComplete) {
             setTimeout(() => {
-              const nextState = moveToNextLead(newState);
-              setExamState(nextState);
-              saveExamState(nextState);
-
-              if (nextState.status === 'completed') {
+              const nextIndex = newState.currentLeadIndex + 1;
+              if (nextIndex >= leads.length) {
+                const nextState = moveToNextLead(newState);
+                setExamState(nextState);
+                saveExamState(nextState);
                 submitAndRedirect(nextState);
               } else {
-                setShowTransition(true);
+                const nextLead = leads[nextIndex];
+
+                // 1. Slide out current chat screen to the left
+                setScreenTransition('slide-out');
+
+                setTimeout(() => {
+                  setTransitionOverlay({
+                    text: `Sesi ${newState.currentLeadIndex + 1} Selesai!`,
+                    subtext: `Menyiapkan Sesi ${nextIndex + 1} (${nextLead.name})...`,
+                  });
+                }, 100);
+
+                setTimeout(() => {
+                  const nextState = moveToNextLead(newState);
+                  setExamState(nextState);
+                  saveExamState(nextState);
+                  setDisplayMessages([]);
+                  setIsTyping(false);
+                  setTransitionOverlay(null);
+                  setScreenTransition('slide-in');
+                  setShowWelcomeModal(true);
+
+                  setTimeout(() => {
+                    setScreenTransition(null);
+                  }, 400);
+                }, 1200);
               }
-            }, 2500);
+            }, 1800);
           }
         }, delay);
       }
     },
-    [examState, isTyping, showWelcomeModal]
+    [examState, isTyping, showWelcomeModal, transitionOverlay]
   );
 
   const submitAndRedirect = async (state: ExamState) => {
@@ -220,21 +276,18 @@ export default function ExamPage() {
     router.push('/thankyou');
   };
 
-  const handleStartNextSection = useCallback(() => {
-    if (!examState) return;
-    setShowTransition(false);
-    setDisplayMessages([]);
-    setIsTyping(false);
-    setShowWelcomeModal(true);
-  }, [examState]);
-
   const handleConfirmStart = () => {
-    if (!examState) return;
-    setShowWelcomeModal(false);
-    const newState = initSection(examState);
-    setExamState(newState);
-    saveExamState(newState);
-    animateOpeningMessages(newState);
+    if (!examState || isModalClosing) return;
+    setIsModalClosing(true);
+
+    setTimeout(() => {
+      setShowWelcomeModal(false);
+      setIsModalClosing(false);
+      const newState = initSection(examState);
+      setExamState(newState);
+      saveExamState(newState);
+      animateOpeningMessages(newState);
+    }, 240);
   };
 
   // Loading state
@@ -262,45 +315,45 @@ export default function ExamPage() {
     );
   }
 
-  // Transition screen between leads
-  if (showTransition) {
-    const prevLeadIndex = examState.currentLeadIndex;
-    const currentLead = leads[prevLeadIndex];
-
-    const actualPrevIndex = prevLeadIndex > 0 ? prevLeadIndex - 1 : 0;
-    const prevLead = leads[actualPrevIndex];
-    const actualPrevReason = examState.sectionEndReasons[actualPrevIndex];
-
-    return (
-      <div className="min-h-screen bg-white flex items-center justify-center p-0 sm:py-4">
-        <div className="w-full sm:max-w-[420px] h-screen sm:h-[94vh] sm:max-h-[860px] bg-white sm:rounded-[32px] sm:shadow-2xl overflow-hidden sm:border-[6px] sm:border-gray-800 flex flex-col">
-          <SectionTransition
-            completedLeadName={prevLead.name}
-            completedReason={actualPrevReason}
-            nextLeadName={currentLead.name}
-            nextLeadProfile={currentLead.profile}
-            nextLeadProgram={currentLead.program}
-            nextLeadAvatar={currentLead.avatar}
-            sectionNumber={prevLeadIndex + 1}
-            onStart={handleStartNextSection}
-          />
-        </div>
-      </div>
-    );
-  }
-
   const currentLead = leads[examState.currentLeadIndex];
   const remaining = getRemainingTime(examState);
   const isSectionDone = examState.phase === 'done' || examState.phase === 'booking-confirm';
 
   return (
     <div className="min-h-screen bg-white sm:bg-gray-100 flex items-center justify-center p-0 sm:py-3 sm:px-4 font-sans relative">
+      {/* Smooth Transition Overlay Between Sessions */}
+      {transitionOverlay && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs animate-fade-in">
+          <div className="bg-white rounded-3xl p-6 sm:p-7 max-w-xs w-full text-center shadow-2xl border border-gray-100 flex flex-col items-center animate-slide-in-right">
+            <div className="w-12 h-12 rounded-full bg-emerald-50 border border-emerald-200 flex items-center justify-center mb-3 shadow-xs">
+              <div className="w-6 h-6 border-3 border-[#075E54] border-t-transparent rounded-full animate-spin" />
+            </div>
+            <h3 className="font-bold text-gray-900 text-base mb-1">
+              {transitionOverlay.text}
+            </h3>
+            {transitionOverlay.subtext && (
+              <p className="text-xs text-gray-600 leading-relaxed">
+                {transitionOverlay.subtext}
+              </p>
+            )}
+          </div>
+        </div>
+      )}
+
       {/* Pop Up: Selamat Mengerjakan */}
       {showWelcomeModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs animate-in fade-in duration-200">
-          <div className="bg-white rounded-3xl p-6 sm:p-8 max-w-sm w-full text-center shadow-2xl border border-gray-100 transform scale-100 transition-all">
+        <div
+          className={`fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs ${
+            isModalClosing ? 'animate-modal-backdrop-out' : 'animate-modal-backdrop-in'
+          }`}
+        >
+          <div
+            className={`bg-white rounded-3xl p-5 sm:p-7 max-w-sm w-full text-center shadow-2xl border border-gray-100 max-h-[92vh] overflow-y-auto ${
+              isModalClosing ? 'animate-modal-slide-out-left' : 'animate-modal-slide-in-right'
+            }`}
+          >
             {/* Celebration Icon */}
-            <div className="w-16 h-16 mx-auto rounded-full bg-[#FFF3CD] border border-[#FFEEBA] flex items-center justify-center text-3xl mb-3 shadow-xs">
+            <div className="w-14 h-14 mx-auto rounded-full bg-[#FFF3CD] border border-[#FFEEBA] flex items-center justify-center text-2xl mb-2.5 shadow-xs">
               🎉
             </div>
 
@@ -312,24 +365,36 @@ export default function ExamPage() {
             </div>
 
             {/* Pop Up Heading */}
-            <h2 className="text-2xl font-extrabold text-gray-900 mb-2">
+            <h2 className="text-xl sm:text-2xl font-extrabold text-gray-900 mb-2">
               Selamat Mengerjakan!
             </h2>
 
-            <p className="text-xs sm:text-sm text-gray-600 mb-4 leading-relaxed">
-              Halo <strong className="text-gray-900">{examState.candidateName}</strong>! Sesi chat simulasi bersama <strong className="text-[#075E54]">{currentLead.name}</strong> ({currentLead.profile}) akan segera dimulai.
+            <p className="text-xs sm:text-sm text-gray-600 mb-3.5 leading-relaxed">
+              Halo <strong className="text-gray-900">{examState.candidateName}</strong>! kamu akan chat bersama <strong className="text-[#075E54]">{currentLead.name}</strong> (<strong className="font-bold text-gray-900">{currentLead.profile}</strong>) akan segera dimulai.
             </p>
 
-            <div className="bg-[#F0FDF4] border border-[#BBF7D0] rounded-xl p-3 mb-6 text-left text-xs text-green-800">
-              <p className="font-semibold mb-0.5">⏱ Waktu Sesi: 15 Menit</p>
-              <p className="text-[11px] text-green-700 leading-tight">
-                Timer akan mulai berjalan saat Anda menekan tombol di bawah.
-              </p>
+            <div className="space-y-2 mb-5 text-left text-xs">
+              <div className="bg-[#F0FDF4] border border-[#BBF7D0] rounded-xl p-2.5 text-green-800">
+                <p className="font-semibold mb-0.5">⏱ Waktu Sesi: 15 Menit</p>
+                <p className="text-[11px] text-green-700 leading-tight">
+                  Timer akan mulai berjalan saat Anda menekan tombol di bawah.
+                </p>
+              </div>
+
+              <div className="bg-amber-50 border border-amber-200 rounded-xl p-2.5 text-amber-900">
+                <p className="font-bold text-amber-950 flex items-center gap-1 mb-1">
+                  <span>🚨</span> Ingat
+                </p>
+                <p className="text-[11px] text-amber-800 leading-relaxed">
+                  Kamu hanya bisa memberikan respon dengan <strong>1 bubble chat</strong>. Pastikan informasi, urgency, dan call to action yang ingin kamu sampaikan sudah tercantum langsung dalam 1 bubble chat sebelum kamu kirim.
+                </p>
+              </div>
             </div>
 
             <button
               onClick={handleConfirmStart}
-              className="w-full h-12 bg-[#E7000B] hover:bg-[#C8000A] active:scale-[0.99] text-white font-bold px-6 rounded-xl transition-all shadow-md text-sm sm:text-base flex items-center justify-center gap-2"
+              disabled={isModalClosing}
+              className="w-full h-11 sm:h-12 bg-[#E7000B] hover:bg-[#C8000A] active:scale-[0.99] text-white font-bold px-6 rounded-xl transition-all shadow-md text-sm sm:text-base flex items-center justify-center gap-2 cursor-pointer disabled:opacity-80"
             >
               <span>Mulai Chat Sekarang</span>
               <span className="text-lg">→</span>
@@ -340,14 +405,14 @@ export default function ExamPage() {
 
       {/* Mobile Portrait Phone Frame */}
       <div className="w-full sm:max-w-[420px] h-screen sm:h-[94vh] sm:max-h-[860px] flex flex-col bg-[#ECE5DD] sm:rounded-[32px] sm:shadow-2xl overflow-hidden sm:border-[6px] sm:border-gray-800 relative">
-        
+
         {/* Smartphone top speaker & camera notch (desktop only) */}
         <div className="hidden sm:flex items-center justify-between px-6 pt-2 pb-1.5 bg-[#075E54] text-white text-[11px] font-medium z-30 select-none">
           <span>09:41</span>
           <div className="w-20 h-3.5 bg-gray-900 rounded-full mx-auto" />
           <div className="flex items-center gap-1.5">
             <svg className="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 24 24">
-              <path d="M12 3c-4.97 0-9 4.03-9 9 0 2.12.74 4.07 1.97 5.61L4.35 21l3.53-.93C9.37 20.66 10.65 21 12 21c4.97 0 9-4.03 9-9s-4.03-9-9-9z"/>
+              <path d="M12 3c-4.97 0-9 4.03-9 9 0 2.12.74 4.07 1.97 5.61L4.35 21l3.53-.93C9.37 20.66 10.65 21 12 21c4.97 0 9-4.03 9-9s-4.03-9-9-9z" />
             </svg>
             <div className="w-4 h-2.5 border border-white rounded-xs p-0.5 flex items-center">
               <div className="w-full h-full bg-white rounded-2xs" />
@@ -355,62 +420,73 @@ export default function ExamPage() {
           </div>
         </div>
 
-        {/* WhatsApp Chat Header */}
-        <ChatHeader
-          leadName={currentLead.name}
-          leadAvatar={currentLead.avatar}
-          leadProfile={currentLead.profile}
-          remainingTime={remaining}
-          onTimeout={handleTimerExpired}
-          sectionLabel={`${examState.currentLeadIndex + 1}/3`}
-        />
-
-        {/* Chat Messages Body */}
+        {/* Active Chat Screen with Lateral Horizontal Slide Transition */}
         <div
-          ref={chatContainerRef}
-          className="flex-1 overflow-y-auto wa-chat-bg chat-scroll py-3"
+          className={`flex-1 flex flex-col min-h-0 overflow-hidden ${
+            screenTransition === 'slide-out'
+              ? 'animate-screen-slide-out-left'
+              : screenTransition === 'slide-in'
+              ? 'animate-screen-slide-in-right'
+              : ''
+          }`}
         >
-          {/* Date pill */}
-          <div className="flex justify-center mb-3">
-            <span className="bg-white/85 text-[#667781] text-[11px] px-3 py-1 rounded-lg shadow-xs select-none">
-              Hari ini
-            </span>
+          {/* WhatsApp Chat Header */}
+          <ChatHeader
+            leadName={currentLead.name}
+            leadAvatar={currentLead.avatar}
+            leadProfile={currentLead.profile}
+            remainingTime={remaining}
+            onTimeout={handleTimerExpired}
+            sectionLabel={`${examState.currentLeadIndex + 1}/3`}
+          />
+
+          {/* Chat Messages Body */}
+          <div
+            ref={chatContainerRef}
+            className="flex-1 overflow-y-auto wa-chat-bg chat-scroll py-3"
+          >
+            {/* Date pill */}
+            <div className="flex justify-center mb-3">
+              <span className="bg-white/85 text-[#667781] text-[11px] px-3 py-1 rounded-lg shadow-xs select-none">
+                Hari ini
+              </span>
+            </div>
+
+            {/* Program context badge */}
+            <div className="flex justify-center mb-3 px-4">
+              <span className="bg-[#FFF3CD] border border-[#FFEEBA] text-[#856404] text-[11px] px-3 py-1.5 rounded-lg shadow-xs text-center leading-tight">
+                🎓 <strong>Program:</strong> {currentLead.program} • <em>{currentLead.source}</em>
+              </span>
+            </div>
+
+            {/* Messages */}
+            {displayMessages.map((msg) => (
+              <ChatBubble
+                key={msg.id}
+                sender={msg.sender}
+                text={msg.text}
+                timestamp={msg.timestamp}
+                leadName={msg.leadName}
+              />
+            ))}
+
+            {/* Typing Indicator */}
+            {isTyping && <TypingIndicator leadName={currentLead.name} />}
+
+            <div ref={messagesEndRef} />
           </div>
 
-          {/* Program context badge */}
-          <div className="flex justify-center mb-3 px-4">
-            <span className="bg-[#FFF3CD] border border-[#FFEEBA] text-[#856404] text-[11px] px-3 py-1.5 rounded-lg shadow-xs text-center leading-tight">
-              🎓 <strong>Program:</strong> {currentLead.program} • <em>{currentLead.source}</em>
-            </span>
-          </div>
-
-          {/* Messages */}
-          {displayMessages.map((msg) => (
-            <ChatBubble
-              key={msg.id}
-              sender={msg.sender}
-              text={msg.text}
-              timestamp={msg.timestamp}
-              leadName={msg.leadName}
-            />
-          ))}
-
-          {/* Typing Indicator */}
-          {isTyping && <TypingIndicator leadName={currentLead.name} />}
-
-          <div ref={messagesEndRef} />
+          {/* Sticky Input Bar */}
+          <ChatInput
+            onSend={handleSend}
+            disabled={isTyping || isSectionDone || showWelcomeModal || Boolean(transitionOverlay)}
+            placeholder={
+              isSectionDone
+                ? 'Sesi telah berakhir'
+                : 'Ketik pesan...'
+            }
+          />
         </div>
-
-        {/* Sticky Input Bar */}
-        <ChatInput
-          onSend={handleSend}
-          disabled={isTyping || isSectionDone || showWelcomeModal}
-          placeholder={
-            isSectionDone
-              ? 'Sesi telah berakhir'
-              : 'Ketik pesan...'
-          }
-        />
 
         {/* Bottom home bar indicator for mobile portrait look */}
         <div className="hidden sm:flex justify-center pb-1 pt-1 bg-[#F0F0F0] select-none">
