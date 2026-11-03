@@ -68,7 +68,7 @@ export function sanitizePrivateKey(rawKey: string | undefined): string {
   if (!rawKey) return '';
   let key = rawKey.trim();
 
-  // Bersihkan tanda kutip pembungkus ("..." atau '...') jika ikut ter-copy di Vercel
+  // 1. Bersihkan tanda kutip pembungkus ("..." atau '...') jika ada
   if (
     (key.startsWith('"') && key.endsWith('"')) ||
     (key.startsWith("'") && key.endsWith("'"))
@@ -76,8 +76,28 @@ export function sanitizePrivateKey(rawKey: string | undefined): string {
     key = key.slice(1, -1).trim();
   }
 
-  // Ganti literal \n menjadi karakter newline sesungguhnya
-  return key.replace(/\\n/g, '\n');
+  // 2. Ganti literal \n dan \r jika ada
+  key = key.replace(/\\r/g, '').replace(/\\n/g, '\n').replace(/\r\n/g, '\n');
+
+  // 3. Jika karakter newline hilang (misal saat copy-paste ke input Vercel menjadi 1 baris rata),
+  // rekonstruksi format PEM standar (pecah Base64 per 64 karakter)
+  const beginHeader = '-----BEGIN PRIVATE KEY-----';
+  const endFooter = '-----END PRIVATE KEY-----';
+
+  if (key.includes(beginHeader) && key.includes(endFooter)) {
+    const startIdx = key.indexOf(beginHeader) + beginHeader.length;
+    const endIdx = key.indexOf(endFooter);
+    const base64Body = key.slice(startIdx, endIdx).replace(/\s+/g, '');
+
+    const chunks = [];
+    for (let i = 0; i < base64Body.length; i += 64) {
+      chunks.push(base64Body.slice(i, i + 64));
+    }
+
+    key = `${beginHeader}\n${chunks.join('\n')}\n${endFooter}\n`;
+  }
+
+  return key;
 }
 
 export async function appendToGoogleSheet(
